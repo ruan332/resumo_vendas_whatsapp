@@ -87,6 +87,7 @@ class APIClient:
                     "CDTIPOPAGAMENTO",
                     "DTEMISSAO",
                     "VLTOTALPEDIDO",
+                    "VLVOLUMEPEDIDO",
                     "FLCONTROLEERP"
                 ],
                 "filters": {

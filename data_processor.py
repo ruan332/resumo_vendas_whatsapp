@@ -71,6 +71,7 @@ class DataProcessor:
                     'Base': empresa.get('NMEMPRESACURTO', ''),
                     'Consultor': vendedor.get('NMREPRESENTANTE', ''),
                     'Valor': venda.get('VLTOTALPEDIDO', '0'),
+                    'Volume': venda.get('VLVOLUMEPEDIDO', '0'),
                     'DataEmissao': venda.get('DTEMISSAO', ''),
                     'UF': empresa.get('UF', 'DESCONHECIDO'),
                     'CDEMPRESA': cd_empresa,
@@ -152,6 +153,7 @@ class DataProcessor:
             for venda in vendas_uf:
                 consultor = venda.get('Consultor', 'Não informado')
                 valor_raw = venda.get('Valor', 0)
+                volume_raw = venda.get('Volume', 0)
                 
                 # Converter valor corretamente
                 try:
@@ -167,10 +169,24 @@ class DataProcessor:
                 except:
                     valor_numerico = 0.0
                 
+                # Converter volume corretamente
+                try:
+                    # Se já é número, usar diretamente
+                    if isinstance(volume_raw, (int, float)):
+                        volume_numerico = float(volume_raw)
+                    else:
+                        # Se é string, converter para float
+                        volume_string = str(volume_raw)
+                        volume_limpo = volume_string.replace(' ', '').strip()
+                        volume_numerico = float(volume_limpo)
+                except:
+                    volume_numerico = 0.0
+                
                 if consultor not in vendas_por_consultor:
-                    vendas_por_consultor[consultor] = {'total': 0, 'quantidade': 0}
+                    vendas_por_consultor[consultor] = {'total': 0, 'volume_total': 0, 'quantidade': 0}
                 
                 vendas_por_consultor[consultor]['total'] += valor_numerico
+                vendas_por_consultor[consultor]['volume_total'] += volume_numerico
                 vendas_por_consultor[consultor]['quantidade'] += 1
             
             # Ordenar por maior valor
@@ -184,25 +200,31 @@ class DataProcessor:
             relatorio = "📊 *RELATÓRIO DE VENDAS*\n\n"
             
             total_geral = 0
+            total_volume = 0
             total_pedidos = 0
             
             for consultor, dados in consultores_ordenados:
                 nome_abreviado = self.abreviar_nome(consultor)
                 valor_formatado = f"R$ {dados['total']:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+                volume_formatado = f"{dados['volume_total']:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
                 
                 relatorio += f"👤 *{nome_abreviado}*\n"
                 relatorio += f"   📦 Pedidos: {dados['quantidade']}\n"
-                relatorio += f"   💰 Total: {valor_formatado}\n\n"
+                relatorio += f"   💰 Total: {valor_formatado}\n"
+                relatorio += f"   🛢️ Volume: {volume_formatado} L\n\n"
                 
                 total_geral += dados['total']
+                total_volume += dados['volume_total']
                 total_pedidos += dados['quantidade']
             
             # Totais gerais
             total_formatado = f"R$ {total_geral:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+            volume_total_formatado = f"{total_volume:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
             relatorio += "=" * 30 + "\n"
             relatorio += f"🎯 *TOTAL GERAL*\n"
             relatorio += f"📦 Total de Pedidos: {total_pedidos}\n"
             relatorio += f"💰 Valor Total: {total_formatado}\n"
+            relatorio += f"🛢️ Volume Total: {volume_total_formatado} L\n"
             
             return relatorio
             
